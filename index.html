@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>能改、能记住的页面</title>
+<style>
+  :root {
+    --paper: #fcfbf7;
+    --ink: #1b1a17;
+    --soft: #4a4740;
+    --faint: #837e73;
+    --rule: #e0dbcf;
+    --edit: #a8541a;
+    --edit-soft: #fdf6ee;
+    --ok: #1f5f3d;
+    --ok-soft: #edf5f0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 3.2rem 1.4rem 6rem;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Iowan Old Style", Palatino, "Source Han Serif SC", "Songti SC", Georgia, serif;
+    font-size: 18px;
+    line-height: 1.8;
+  }
+  .wrap { max-width: 38rem; margin: 0 auto; }
+
+  h1 {
+    font-family: "Inter", "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 2rem;
+    font-weight: 620;
+    letter-spacing: -.015em;
+    line-height: 1.25;
+    margin: 0 0 .5rem;
+  }
+  .sub { color: var(--faint); margin: 0 0 2.6rem; font-size: .95rem; }
+
+  h2 {
+    font-family: "Inter", "Segoe UI", "PingFang SC", system-ui, sans-serif;
+    font-size: 1.08rem;
+    font-weight: 620;
+    margin: 2.6rem 0 .8rem;
+    padding-top: 1.3rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  p { margin: 0 0 1rem; }
+  strong { font-weight: 660; }
+  code {
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: .87em;
+    background: #f5f3ec;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: .06em .32em;
+  }
+
+  /* ============================================================
+     可编辑区域：样式按 data-pb 属性套用，所以任何标签都能用。
+     你不需要给新内容加 class —— 只要给它写上一个 data-pb 名字。
+     ============================================================ */
+
+  [data-pb] {
+    display: block;
+    color: var(--ink);
+    border-radius: 4px;
+    background: var(--edit-soft);
+    border: 1px solid var(--rule);
+    padding: .8rem 1rem;
+    margin: 0 0 1.2rem;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  [data-pb] img { max-width: 100%; }
+  [data-pb]:focus {
+    border-color: var(--edit);
+    box-shadow: 0 0 0 3px var(--edit-soft);
+  }
+
+  /* 页面上按钮的样式（你要加第二个可编辑块时，不需要动这里） */
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+    align-items: center;
+    margin: 2.4rem 0 0;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--rule);
+  }
+  button {
+    font-family: "Inter", "Segoe UI", "PingFang SC", system-ui, sans-serif;
+    font-size: .84rem;
+    font-weight: 600;
+    color: var(--soft);
+    background: var(--paper);
+    border: 1px solid #c8c1b1;
+    border-radius: 5px;
+    padding: .42rem .85rem;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--edit); color: var(--edit); }
+
+  #saveTip {
+    font-family: "Inter", "Segoe UI", "PingFang SC", system-ui, sans-serif;
+    font-size: .84rem;
+    color: var(--ok);
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  #saveTip.on { opacity: 1; }
+
+  .hint {
+    font-size: .86rem;
+    color: var(--faint);
+    margin-top: 2rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--rule);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>我的备忘录</h1>
+  <p class="sub">下面每一块都可以直接点进去改。改完刷新，它还会在。</p>
+
+  <!-- ============================================================
+       可编辑块 · 第一块
+       改成你自己的名字：把 about 换成 note
+       ============================================================ -->
+  <h2>这页是干什么的</h2>
+  <div data-pb="note" contenteditable="true">这里已经改成我自己写的一段话了</div>
+
+  <!-- ============================================================
+       可编辑块 · 第二块
+       ↓↓↓ 留白 ②：从这里往下，是给你加第二块用的示范
+       把最下面那段灰色代码里的内容复制出来，改掉标签里的名字，再改掉里面的文字
+       ============================================================ -->
+  <h2>这里是第二块</h2>
+<div data-pb="plan" contenteditable="true">第二块的默认文字</div>
+
+  <div class="bar">
+    <button id="clearBtn" type="button">清空全部记录，恢复默认</button>
+    <span id="saveTip">已保存</span>
+  </div>
+
+  <p class="hint">
+    这块橙色底色的区域，就是「可以改」的标志。凡是看到这个底色，你都可以直接点进去打字——
+    不需要打开任何代码。
+  </p>
+
+</div>
+
+<script>
+/* ================================================================
+   这段代码只做四件事：
+     1. 页面打开时，从浏览器抽屉里把之前存的字读出来
+     2. 你每打一个字，就立刻存进抽屉
+     3. 「已保存」小提示
+     4. 清空按钮
+
+   它不需要你登记任何名字：页面上每一个写了 data-pb 的块，
+   它都会自己找到。所以你加新块的时候，只动 HTML，不用动这段代码。
+
+   下面这段代码里没有写死任何一个名字，一个字都不要改。
+   ================================================================ */
+
+(function () {
+
+  /* 1. 打开页面：找到页面上每一个可编辑块，把存过的内容填回去 */
+  document.querySelectorAll("[data-pb]").forEach(function (el) {
+    var saved = localStorage.getItem(el.getAttribute("data-pb"));
+    if (saved) el.innerHTML = saved;
+  });
+
+  /* 2 + 3. 输入时存起来 */
+  var tip = document.getElementById("saveTip");
+  var tipTimer = null;
+  document.querySelectorAll("[data-pb]").forEach(function (el) {
+    el.addEventListener("input", function () {
+      localStorage.setItem(el.getAttribute("data-pb"), el.innerHTML);
+      if (tip) {
+        tip.classList.add("on");
+        clearTimeout(tipTimer);
+        tipTimer = setTimeout(function () { tip.classList.remove("on"); }, 1000);
+      }
+    });
+  });
+
+  /* 4. 清空 */
+  var btn = document.getElementById("clearBtn");
+  if (btn) {
+    btn.addEventListener("click", function () {
+      localStorage.clear();
+      location.reload();
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
